@@ -26,3 +26,4 @@ pub fn read_appconfig () {
     let decoded: AppConfig = toml::decode_str(&s).unwrap();
 }
 
+

@@ -10,7 +10,14 @@ pub struct User {
     pub user_id: i32,
     pub twitter_id: i64,
     pub screenname: String,
-    pub name: String
+    pub name: String,
+}
+
+#[derive(RustcEncodable)]
+pub struct User_Config {
+    pub user_id: i32,
+    pub access_key: String,
+    pub access_secret: String
 }
 
 #[derive(RustcEncodable)]
@@ -65,6 +72,21 @@ define_get_all!(get_all_comments, "comments", Comment,
                 |x| {Comment {id:x.get(0), user_id: x.get(1), comment: x.get(2)}
                 });
 
+
+impl User_Config {
+    fn get_user_config (pool: &r2d2::Pool<r2d2_sqlite::SqliteConnectionManager>, user_id: i32)
+        -> (String, String) {
+        let conn = &pool.get().unwrap();
+        let query = "select access_key, access_secret from user_config where user_id = $1";
+        let ret = conn.query_row(query, &[&user_id], |row| (row.get(0), row.get(1))).unwrap();
+        return ret;
+    }
+    fn set_user_config (pool: &r2d2::Pool<r2d2_sqlite::SqliteConnectionManager>, user_config: User_Config) {
+        let conn = &pool.get().unwrap();
+        let query = "insert into user_config(user_id, access_key, access_secret) values($1, $2, $3)";
+        conn.execute(query, &[&user_config.user_id, &user_config.access_key, &user_config.access_secret]);
+    }
+}
 
 impl User {
     fn push(&self, pool: r2d2::Pool<r2d2_sqlite::SqliteConnectionManager>)
