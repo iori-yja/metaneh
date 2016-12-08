@@ -14,13 +14,6 @@ pub struct User {
 }
 
 #[derive(RustcEncodable)]
-pub struct User_Config {
-    pub user_id: i32,
-    pub access_key: String,
-    pub access_secret: String
-}
-
-#[derive(RustcEncodable)]
 pub struct Paper {
     pub paper_id: i32,
     pub author_id: i32,
@@ -34,6 +27,13 @@ pub struct Comment {
     pub id: i32,
     pub user_id: i32,
     pub comment: String
+}
+
+#[derive(RustcEncodable)]
+pub struct User_Config {
+    pub user_id: i32,
+    pub access_key: String,
+    pub access_secret: String
 }
 
 pub fn establish_resourcepool(db: &str)
