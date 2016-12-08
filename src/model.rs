@@ -36,38 +36,27 @@ pub fn establish_resourcepool(db: &str)
     return r2d2::Pool::new(config, manager).unwrap();
 }
 
-/*macro_rules! define_get_all {
-    ($table: tt, $typ: ty, $builder: block) => {
-        fn format!("get_all_{}", $table) (pool: &r2d2::Pool<r2d2_sqlite::SqliteConnectionManager>)
+macro_rules! define_get_all {
+    ($fname: tt, $table: tt, $typ: ty, $builder: expr) => {
+        pub fn $fname (pool: &r2d2::Pool<r2d2_sqlite::SqliteConnectionManager>)
         -> Vec<$typ>{
             let conn = &pool.get().unwrap();
             let query = "select * from users";
             let mut stmt = conn.prepare(query).unwrap();
             let mut vec = Vec::new();
+            let mut p = stmt.query_map(&[], $builder).unwrap();
+            for x in p {
+                vec.push(x.unwrap());
+            }
+            return vec;
         }
     }
-}*/
-
-pub fn get_all_users (pool: &r2d2::Pool<r2d2_sqlite::SqliteConnectionManager>)
-    -> Vec<User> {
-    let conn = &pool.get().unwrap();
-    let query = "select * from users";
-    let mut stmt = conn.prepare(query).unwrap();
-    let mut vec = Vec::new();
-    let mut p = stmt.query_map(&[], |x| {
-        User {
-            user_id:    x.get(0),
-            twitter_id: x.get(1),
-            screenname: x.get(2),
-            name:       x.get(3),
-        }
-    }).unwrap();
-
-    for x in p {
-        vec.push(x.unwrap());
-    }
-    return vec;
 }
+
+define_get_all!(get_all_users, "users", User,
+                |x| { User {user_id: x.get(0), twitter_id: x.get(1), screenname: x.get(2), name: x.get(3)}
+                });
+
 
 pub fn get_all_papers (pool: &r2d2::Pool<r2d2_sqlite::SqliteConnectionManager>)
     -> Vec<Paper> {
