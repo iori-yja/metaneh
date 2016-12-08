@@ -7,6 +7,7 @@ extern crate rustc_serialize;
 extern crate mustache;
 
 mod model;
+mod twitter;
 
 /* Unfortunately, we are force to use majestic bogos structure. */
 #[derive(RustcEncodable)]
@@ -15,7 +16,6 @@ pub struct Giant_Root_Node {
     papers: Vec<model::Paper>,
     comments: Vec<model::Comment>
 }
-
 
 fn main() {
     let mut server = Nickel::new();
