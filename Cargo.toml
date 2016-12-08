@@ -1,0 +1,11 @@
+[package]
+name = "nickel-test"
+version = "0.1.0"
+authors = ["Iori YONEJI <fivo.11235813@gmail.com>"]
+
+[dependencies]
+r2d2 = "*"
+r2d2_sqlite = "*"
+nickel = "*"
+mustache = "*"
+rustc-serialize = "*"
