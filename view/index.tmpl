@@ -10,6 +10,13 @@
     </h1>
     サブミット済のタイトルの一覧です。
     <ul> 
+		{{#papers}}
+      <li>
+        {{name}}: {{abst_url}}
+      </li>
+		{{/papers}}
+    </ul>
+    <ul> 
 		{{#users}}
       <li>
         {{name}}

@@ -7,10 +7,26 @@ use std::vec;
 
 #[derive(RustcEncodable)]
 pub struct User {
-    pub id: i32,
+    pub user_id: i32,
     pub twitter_id: i64,
     pub screenname: String,
     pub name: String
+}
+
+#[derive(RustcEncodable)]
+pub struct Paper {
+    pub paper_id: i32,
+    pub author_id: i32,
+    pub title: String,
+    pub abst_url:  String,
+    pub comment: String
+}
+
+#[derive(RustcEncodable)]
+pub struct Comment {
+    pub id: i32,
+    pub user_id: i32,
+    pub comment: String
 }
 
 pub fn establish_resourcepool(db: &str)
@@ -20,6 +36,18 @@ pub fn establish_resourcepool(db: &str)
     return r2d2::Pool::new(config, manager).unwrap();
 }
 
+/*macro_rules! define_get_all {
+    ($table: tt, $typ: ty, $builder: block) => {
+        fn format!("get_all_{}", $table) (pool: &r2d2::Pool<r2d2_sqlite::SqliteConnectionManager>)
+        -> Vec<$typ>{
+            let conn = &pool.get().unwrap();
+            let query = "select * from users";
+            let mut stmt = conn.prepare(query).unwrap();
+            let mut vec = Vec::new();
+        }
+    }
+}*/
+
 pub fn get_all_users (pool: &r2d2::Pool<r2d2_sqlite::SqliteConnectionManager>)
     -> Vec<User> {
     let conn = &pool.get().unwrap();
@@ -28,10 +56,32 @@ pub fn get_all_users (pool: &r2d2::Pool<r2d2_sqlite::SqliteConnectionManager>)
     let mut vec = Vec::new();
     let mut p = stmt.query_map(&[], |x| {
         User {
-            id:         x.get(0),
+            user_id:    x.get(0),
             twitter_id: x.get(1),
             screenname: x.get(2),
             name:       x.get(3),
+        }
+    }).unwrap();
+
+    for x in p {
+        vec.push(x.unwrap());
+    }
+    return vec;
+}
+
+pub fn get_all_papers (pool: &r2d2::Pool<r2d2_sqlite::SqliteConnectionManager>)
+    -> Vec<Paper> {
+    let conn = &pool.get().unwrap();
+    let query = "select * from papers";
+    let mut stmt = conn.prepare(query).unwrap();
+    let mut vec = Vec::new();
+    let mut p = stmt.query_map(&[], |x| {
+        Paper {
+            paper_id:   x.get(0),
+            author_id:  x.get(1),
+            title:      x.get(2),
+            abst_url:   x.get(3),
+            comment:    x.get(4),
         }
     }).unwrap();
 
@@ -46,7 +96,7 @@ impl User {
         -> bool {
         let conn = pool.get().unwrap();
         match conn.execute("INSERT INTO users values ($1, $2, $3, $4)",
-                                &[&self.id, &self.twitter_id,
+                                &[&self.user_id, &self.twitter_id,
                                   &self.screenname, &self.name]
                           ) {
             Ok(_) => return true,
