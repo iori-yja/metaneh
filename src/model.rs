@@ -41,8 +41,8 @@ macro_rules! define_get_all {
         pub fn $fname (pool: &r2d2::Pool<r2d2_sqlite::SqliteConnectionManager>)
         -> Vec<$typ>{
             let conn = &pool.get().unwrap();
-            let query = "select * from users";
-            let mut stmt = conn.prepare(query).unwrap();
+            let query = format!("select * from {}", $table);
+            let mut stmt = conn.prepare(&query).unwrap();
             let mut vec = Vec::new();
             let mut p = stmt.query_map(&[], $builder).unwrap();
             for x in p {
