@@ -13,7 +13,7 @@ mod model;
 pub struct Giant_Root_Node {
     users: Vec<model::User>,
     papers: Vec<model::Paper>,
-//    comments: Vec<model::Comment>
+    comments: Vec<model::Comment>
 }
 
 
@@ -24,7 +24,8 @@ fn main() {
     server.get("/", middleware! {|_, response|
         let users = model::get_all_users(&pool);
         let papers = model::get_all_papers(&pool);
-        return response.render("view/index.tmpl", &Giant_Root_Node { users: users, papers: papers });
+        let comments = model::get_all_comments(&pool);
+        return response.render("view/index.tmpl", &Giant_Root_Node { users: users, papers: papers, comments: comments });
     });
 
     server.listen("127.0.0.1:6767");

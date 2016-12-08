@@ -54,31 +54,17 @@ macro_rules! define_get_all {
 }
 
 define_get_all!(get_all_users, "users", User,
-                |x| { User {user_id: x.get(0), twitter_id: x.get(1), screenname: x.get(2), name: x.get(3)}
+                |x| {User {user_id: x.get(0), twitter_id: x.get(1), screenname: x.get(2), name: x.get(3)}
                 });
 
+define_get_all!(get_all_papers, "papers", Paper,
+                |x| {Paper {paper_id:x.get(0), author_id: x.get(1), title: x.get(2), abst_url: x.get(3), comment: x.get(4)}
+                });
 
-pub fn get_all_papers (pool: &r2d2::Pool<r2d2_sqlite::SqliteConnectionManager>)
-    -> Vec<Paper> {
-    let conn = &pool.get().unwrap();
-    let query = "select * from papers";
-    let mut stmt = conn.prepare(query).unwrap();
-    let mut vec = Vec::new();
-    let mut p = stmt.query_map(&[], |x| {
-        Paper {
-            paper_id:   x.get(0),
-            author_id:  x.get(1),
-            title:      x.get(2),
-            abst_url:   x.get(3),
-            comment:    x.get(4),
-        }
-    }).unwrap();
+define_get_all!(get_all_comments, "comments", Comment,
+                |x| {Comment {id:x.get(0), user_id: x.get(1), comment: x.get(2)}
+                });
 
-    for x in p {
-        vec.push(x.unwrap());
-    }
-    return vec;
-}
 
 impl User {
     fn push(&self, pool: r2d2::Pool<r2d2_sqlite::SqliteConnectionManager>)
