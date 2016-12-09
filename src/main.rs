@@ -43,28 +43,20 @@ fn main() {
     });
 
     server.get("/sign-in/:state", middleware! {|request, response|
-        print!("[sign-in]: ");
         let mut twitter_sign_in = twitter_client.lock().unwrap();
         match request.param("state") {
             Some("new")      => return response.redirect(twitter_sign_in.generate_authorize_url().to_string()),
-            Some(_) => {
-                print!("try to ");
+            Some("callback") => {
                 let res = twitter_sign_in.access_token(request.query().get("oauth_verifier").unwrap().to_string());
                 match res {
-                    Some(user) => {
-                            println!("render: {}", user);
-                            return response.render("view/logintest.tmpl", &TempResponse{username: user })
-                        },
-                    None       => {
-                            println!("redirect");
-                            return response.redirect("/sign-in/new")
-                        }
+                    Some(user) =>
+                            return response.render("view/logintest.tmpl", &TempResponse{username: user }),
+                    None       => return response.redirect("/sign-in/new")
                     }
                 },
-            None             => return response.redirect("/sign-in/new"),
+            _                  => return response.redirect("/sign-in/new"),
         }
     });
 
-    print!("running server..");
     server.listen("127.0.0.1:6767");
 }
