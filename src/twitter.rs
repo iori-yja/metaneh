@@ -36,14 +36,21 @@ pub fn new<'a> (config: &str) -> Twitter_Authorizer<'a> {
 }
 
 impl<'a> Twitter_Authorizer<'a> {
-    pub fn access_token (&self, oauth_verifier: String) -> String {
+    pub fn access_token (&self, oauth_verifier: String) -> Option<String> {
         let request = &self.request_token_pool.get(&1).unwrap();
-        let (token, id, name) = egg_mode::access_token(&self.consumer, request, oauth_verifier).unwrap();
-        println!("id: {}, name: {}", id, name);
-        return format!("id: {}, name: {}", id, name);
+        match egg_mode::access_token(&self.consumer, request, oauth_verifier) {
+            Ok((token, id, name)) => {
+                println!("id: {}, name: {}", id, name);
+                return Some(name);
+            }
+            Err(e) => {
+                println!("{}", e);
+                return Some(format!("{}", e));
+            }
+        }
     }
     pub fn generate_authorize_url (&mut self) -> String {
-        let mut request = egg_mode::request_token(&self.consumer, "http://localhost:6767/sign-in/callback/").unwrap();
+        let mut request = egg_mode::request_token(&self.consumer, "http://localhost:6767/sign-in/callback").unwrap();
         let url = egg_mode::authenticate_url(&request);
         &self.request_token_pool.insert(1, request);
         return url;
