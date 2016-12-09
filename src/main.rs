@@ -1,11 +1,12 @@
 #[macro_use] extern crate nickel;
 extern crate nickel_cookies;
 extern crate cookie;
+extern crate rustc_serialize;
+extern crate mustache;
 use nickel::{Nickel, HttpRouter, QueryString, Query};
 use cookie::Cookie;
 use nickel::extensions::Redirect;
-extern crate rustc_serialize;
-extern crate mustache;
+use std::sync::{Arc, Mutex};
 
 mod model;
 mod twitter;
@@ -27,7 +28,7 @@ fn get_sign_in_query (q: &Query) -> (&str, &str) {
 fn main() {
     let mut server = Nickel::new();
     let pool = model::establish_resourcepool("test.db");
-    let mut twitter_client = twitter::new(".config");
+    let twitter_client = Arc::new(Mutex::new(twitter::new(".config")));
 
     server.get("/", middleware! {|_, response|
         let users = model::get_all_users(&pool);
@@ -36,12 +37,18 @@ fn main() {
         return response.render("view/index.tmpl", &Giant_Root_Node { users: users, papers: papers, comments: comments });
     });
 
-    server.get("/sign-in", middleware! {|_, response|
-        let twitter_sign_in = twitter_client.generate_authorize_url();
-        return response.redirect(twitter_sign_in)});
+    server.get("/sign-in/:state", middleware! {|request, response|
+        let mut twitter_sign_in = twitter_client.lock().unwrap();
+        match request.param("state") {
+            Some("callback") => {
+                let res = twitter_sign_in.access_token(request.query().get("oauth_verifier").unwrap().to_string());
+                return response.redirect(format!("/{}", res))
+            }
+            Some("new")      => return response.redirect(twitter_sign_in.generate_authorize_url().to_string()),
+            Some(_)          => return response.redirect("/sign-in/new"),
+            None             => return response.redirect("/sign-in/new"),
 
-    server.get("/sign-in-callback/", middleware! {|request,response|
-        let query = get_sign_in_query(request.query());
+        }
     });
 
     server.listen("127.0.0.1:6767");
