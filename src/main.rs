@@ -4,8 +4,10 @@ extern crate cookie;
 extern crate rustc_serialize;
 extern crate mustache;
 use nickel::{Nickel, HttpRouter, QueryString, Query};
+use nickel::status::StatusCode;
 use cookie::Cookie;
 use nickel::extensions::Redirect;
+use std::panic;
 use std::sync::{Arc, Mutex};
 
 mod model;
@@ -47,11 +49,11 @@ fn main() {
         match request.param("state") {
             Some("new")      => return response.redirect(twitter_sign_in.generate_authorize_url().to_string()),
             Some("callback") => {
+                panic::set_hook(Box::new(|_| {println!("na")}));
                 let res = twitter_sign_in.access_token(request.query().get("oauth_verifier").unwrap().to_string());
                 match res {
-                    Some(user) =>
-                            return response.render("view/logintest.tmpl", &TempResponse{username: user }),
-                    None       => return response.redirect("/sign-in/new")
+                    Some(user) => return response.render("view/logintest.tmpl", &TempResponse{username: user}),
+                    _  => return response.redirect("/sign-in/new")
                     }
                 },
             _                  => return response.redirect("/sign-in/new"),
