@@ -11,9 +11,10 @@ use std::fs::{File, OpenOptions};
 use std::collections::HashMap;
 use std::path::Path;
 use std::path::PathBuf;
+use std::process::Command;
 use rustc_serialize::Decodable;
-use rustc_serialize::json::{self, Json};
 use self::bmemcached::errors::BMemcachedError;
+use std::thread;
 use std::ops::Deref;
 
 #[derive(Debug, RustcEncodable, RustcDecodable)]
@@ -27,14 +28,29 @@ pub struct Twitter_Authorizer<'a> {
     request_token_pool: bmemcached::MemcachedClient
 }
 
+fn spawn_memcached_server (port: u32, retry: u32) -> Option<bmemcached::MemcachedClient> {
+    if retry == 0 {
+        return None
+    }
+    println!("try: memcached -p {}", port);
+    Command::new("memcached").arg(format!("-p {}", port)).spawn();
+    thread::sleep_ms(1000);
+
+    match bmemcached::MemcachedClient::new(vec![format!("localhost:{}",port).deref()], 6) {
+        Ok(conn) => Some(conn),
+        Err(_)   => spawn_memcached_server(port + 1, retry - 1)
+    }
+}
+
 pub fn new<'a> (config: &str) -> Twitter_Authorizer<'a> {
     let mut f = File::open(config).unwrap();
     let mut s = String::new();
     f.read_to_string(&mut s).unwrap();
     let decoded: AppConfig = toml::decode_str(&s).unwrap();
+
     Twitter_Authorizer {
         consumer: egg_mode::Token::new(decoded.consumer_key, decoded.consumer_secret),
-        request_token_pool: bmemcached::MemcachedClient::new(vec!["localhost:11211"], 6).unwrap()
+        request_token_pool: spawn_memcached_server(11212, 3).unwrap(),
     }
 }
 
@@ -43,7 +59,7 @@ impl<'a> Twitter_Authorizer<'a> {
         let req_key : String = self.request_token_pool.get("key").unwrap();
         let req_sec : String = self.request_token_pool.get("sec").unwrap();
 
-        println!("got: {} - {}", req_key, req_sec);
+        //println!("got: {} - {}", req_key, req_sec);
         let request = egg_mode::Token::new(req_key, req_sec);
 
         match egg_mode::access_token(&self.consumer, &request, oauth_verifier) {
@@ -63,7 +79,7 @@ impl<'a> Twitter_Authorizer<'a> {
         let url = egg_mode::authenticate_url(&request);
         let key = &request.key.into_owned();
         let sec = &request.secret.into_owned();
-        println!("{}: {}", key, sec);
+        //println!("{}: {}", key, sec);
         &self.request_token_pool.add("key", key, 60);
         &self.request_token_pool.add("sec", sec, 60);
         return url;
