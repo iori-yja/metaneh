@@ -29,7 +29,7 @@ pub struct TempResponse {
 fn main() {
     let mut server = Nickel::new();
     let pool = model::establish_resourcepool("test.db");
-    let twitter_client = Arc::new(Mutex::new(twitter::new(".config")));
+    let twitter_client = Arc::new(twitter::new(".config"));
 
     server.get("/", middleware! {|_, response|
         let users = model::get_all_users(&pool);
@@ -39,13 +39,12 @@ fn main() {
     });
 
     server.get("/sign-in/:state", middleware! {|request, response|
-        let mut twitter_sign_in = twitter_client.lock().unwrap();
         match request.param("state") {
-            Some("new")      => return response.redirect(twitter_sign_in.generate_authorize_url().to_string()),
+            Some("new")      => return response.redirect(twitter_client.generate_authorize_url().to_string()),
             Some("callback") => {
                 let verifier = request.query().get("oauth_verifier");
                 if verifier.is_none() { return response.error(StatusCode::BadRequest, "") };
-                let res = twitter_sign_in.access_token(verifier.unwrap().to_string());
+                let res = twitter_client.access_token(verifier.unwrap().to_string());
                 match res {
                     Some(user) => return response.render("view/logintest.tmpl", &TempResponse{username: user}),
                     _  => return response.redirect("/sign-in/new")
