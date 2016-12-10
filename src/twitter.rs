@@ -37,15 +37,19 @@ pub fn new<'a> (config: &str) -> Twitter_Authorizer<'a> {
 
 impl<'a> Twitter_Authorizer<'a> {
     pub fn access_token (&self, oauth_verifier: String) -> Option<String> {
-        let request = &self.request_token_pool.get(&1).unwrap();
-        match egg_mode::access_token(&self.consumer, request, oauth_verifier) {
+        let request = &self.request_token_pool.get(&1);
+
+        /* Bad Request */
+        if request.is_none() {return None};
+
+        match egg_mode::access_token(&self.consumer, request.unwrap(), oauth_verifier) {
             Ok((token, id, name)) => {
                 println!("id: {}, name: {}", id, name);
                 return Some(name);
             }
             Err(e) => {
                 println!("{}", e);
-                return Some(format!("{}", e));
+                return None;
             }
         }
     }

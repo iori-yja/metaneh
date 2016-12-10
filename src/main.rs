@@ -26,12 +26,6 @@ pub struct TempResponse {
     username: String,
 }
 
-fn get_sign_in_query (q: &Query) -> (&str, &str) {
-    let token = q.get("oauth_token").unwrap();
-    let verifier = q.get("oauth_verifier").unwrap();
-    return (token, verifier);
-}
-
 fn main() {
     let mut server = Nickel::new();
     let pool = model::establish_resourcepool("test.db");
@@ -49,8 +43,9 @@ fn main() {
         match request.param("state") {
             Some("new")      => return response.redirect(twitter_sign_in.generate_authorize_url().to_string()),
             Some("callback") => {
-                panic::set_hook(Box::new(|_| {println!("na")}));
-                let res = twitter_sign_in.access_token(request.query().get("oauth_verifier").unwrap().to_string());
+                let verifier = request.query().get("oauth_verifier");
+                if verifier.is_none() { return response.error(StatusCode::BadRequest, "") };
+                let res = twitter_sign_in.access_token(verifier.unwrap().to_string());
                 match res {
                     Some(user) => return response.render("view/logintest.tmpl", &TempResponse{username: user}),
                     _  => return response.redirect("/sign-in/new")
