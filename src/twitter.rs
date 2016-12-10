@@ -3,6 +3,7 @@ extern crate toml;
 extern crate egg_mode;
 extern crate bmemcached;
 
+use bmemcached::MemcachedClient;
 use std::convert::AsRef;
 use std::clone::Clone;
 use std::io::prelude::*;
@@ -13,7 +14,6 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
 use rustc_serialize::Decodable;
-use self::bmemcached::errors::BMemcachedError;
 use std::thread;
 use std::ops::Deref;
 
@@ -25,10 +25,10 @@ struct AppConfig {
 
 pub struct Twitter_Authorizer<'a> {
     consumer: egg_mode::Token<'a>,
-    request_token_pool: bmemcached::MemcachedClient
+    request_token_pool: MemcachedClient
 }
 
-fn spawn_memcached_server (port: u32, retry: u32) -> Option<bmemcached::MemcachedClient> {
+fn spawn_memcached_server (port: u32, retry: u32) -> Option<MemcachedClient> {
     if retry == 0 {
         return None
     }
@@ -36,7 +36,7 @@ fn spawn_memcached_server (port: u32, retry: u32) -> Option<bmemcached::Memcache
     Command::new("memcached").arg(format!("-p {}", port)).spawn();
     thread::sleep_ms(1000);
 
-    match bmemcached::MemcachedClient::new(vec![format!("localhost:{}",port).deref()], 6) {
+    match MemcachedClient::new(vec![format!("localhost:{}",port).deref()], 6) {
         Ok(conn) => Some(conn),
         Err(_)   => spawn_memcached_server(port + 1, retry - 1)
     }

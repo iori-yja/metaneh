@@ -3,6 +3,7 @@ extern crate nickel_cookies;
 extern crate cookie;
 extern crate rustc_serialize;
 extern crate mustache;
+extern crate bmemcached;
 use nickel::{Nickel, HttpRouter, QueryString, Query};
 use nickel::status::StatusCode;
 use cookie::Cookie;
